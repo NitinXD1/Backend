@@ -4,7 +4,7 @@
   "description": "A very basic backend app to deploy",
   "main": "index.js",
   "scripts": {
-    "start" : "node index.js",
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -12,4 +12,9 @@
   ],
   "author": "Nitin",
   "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "gitignore": "^0.7.0"
+  }
 }
