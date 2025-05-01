@@ -1,7 +1,7 @@
 import {asyncHandler} from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/apiError.js'
 import {User} from '../models/user.model.js'
-import { uploadOnCloudinary } from '../utils/cloudinary.js'
+import { deleteFromCloudinary, uploadOnCloudinary } from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/apiResponse.js'
 import jwt from 'jsonwebtoken'
 
@@ -314,6 +314,9 @@ const updateUserAvatar = asyncHandler(async(req,res) =>{
         throw new ApiError(400,"Error while uploading on avatar")
     }
 
+    const prevUser = await User.findById(req.user._id)
+    const fileToBeDeleted = prevUser.avatar
+
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
@@ -325,6 +328,9 @@ const updateUserAvatar = asyncHandler(async(req,res) =>{
             new : true
         }
     ).select("-password -refreshToken")
+
+    //deleting after the updation is better
+    await deleteFromCloudinary(fileToBeDeleted)
 
     return res
     .status(200)
@@ -364,6 +370,8 @@ const updateUserCoverImage = asyncHandler(async(req,res) =>{
         new ApiResponse(200,user,"CoverImage updated successfully")
     )
 })
+
+
 
 export {
     registerUser,
