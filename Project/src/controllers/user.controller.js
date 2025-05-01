@@ -371,6 +371,89 @@ const updateUserCoverImage = asyncHandler(async(req,res) =>{
     )
 })
 
+const getUserChannelProfile = asyncHandler(async (req,res) => {
+    const {username} = req.params
+
+    if(!username?.trim()){
+        throw new ApiError(400,"Username is missing")
+    }
+
+    //can do this way
+    //User.find({username})
+
+    const channel = await User.aggregate([
+        {
+            $match : {
+                        username : username?.toLowerCase()
+                    }
+        },
+        //finding subscribers pipeline
+        {
+            $lookup : {
+                from : "subscriptions",
+                localField : "_id",
+                foreignField : "channel",
+                as : "subscribers"
+            }
+        },
+        //finding subscribed 
+        {
+            $lookup : {
+                from : "subscriptions",
+                localField : "_id",
+                foreignField : "subscriber",
+                as : "subscribedTo"
+            }
+        },
+        //adding these fields to the main user model using pipelines
+        {
+            $addFields : {
+                subscribersCount : {
+                    $size : "$subscribers"
+                },
+                channelsSubscribedToCount : {
+                    $size : "$subscribedTo"
+                },
+                isSubscribed : {
+                    $cond : {
+                        if: {
+                            //in checks if its present of not
+                            $in : [req.user?._id , "$subscribers.subscriber"]
+                        },
+                        then : true,
+                        else : false
+                    }
+                }
+            }
+        },
+        {
+            //giving selected things by flagging using project operator
+            $project : {
+                username : 1,
+                fullName : 1,
+                subscribersCount : 1,
+                channelsSubscribedToCount : 1,
+                isSubscribed : 1,
+                avatar : 1,
+                coverImage : 1,
+                email : 1,
+            }
+        }
+    ])
+
+    if(!channel?.length){
+        throw new ApiError(404,"channel doesnt exists")
+    }
+
+    //what data type does aggregate returns
+    //it return an array of objects but in our case we have only channel[0]
+
+    return res.status(200)
+    .json(
+        new ApiResponse(200,channel[0],"User Channel Fetched Successfully")
+    )
+
+} )
 
 
 export {
@@ -382,5 +465,6 @@ export {
     getCurrentUser,
     updateAccountDetails,
     updateUserAvatar,
-    updateUserCoverImage
+    updateUserCoverImage,
+    getUserChannelProfile
 }
